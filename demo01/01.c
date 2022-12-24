@@ -15,7 +15,7 @@ extern void large_num_add(const large_num *const numA, const large_num *const nu
 
 extern large_num large_num_copy(const large_num *const num);
 
-extern void large_num_minus(const large_num *const numA, const large_num *const numB, large_num_ptr result);
+extern void large_num_minus(const large_num *const numA, const large_num *const numB, large_num_ptr *result);
 
 extern void large_num_print(const large_num *const num);
 
@@ -26,7 +26,7 @@ int main()
   large_num_ptr numA = create_large_num(10), numB = create_large_num(10), result = create_large_num(10);
   large_num_input(numA);
   large_num_input(numB);
-  large_num_add(numA, numB, result);
+  large_num_add(numA, numB, &result);
   large_num_print(result);
   return 0;
 }
@@ -36,26 +36,29 @@ large_num_ptr create_large_num(int len)
 {
   large_num_ptr p = (large_num_ptr) malloc(sizeof(large_num));
   p->num = (char *) malloc(sizeof(char) * len);
+  for (int i = 0; i < len; i++)
+    p->num[i] = 0;
   p->len = len;
   return p;
 }
 
-//两个家数numA和numB相加，结果存放在result中，注意提前分配好result的空间
+//两个家数numA和numB相加，结果存放在result中，注意提前分配好result的空间或将result初始化为NULL
 void large_num_add(const large_num *const numA, const large_num *const numB, large_num_ptr *result)
 {
-  int i, j, k, carry = 0;
-  large_num_ptr numC = create_large_num(numA->len + 1);
-  for (i = numA->len - 1, j = numB->len - 1, k = numC->len - 1; i >= 0 || j >= 0; i--, j--, k--)
-  {
-    int a = i >= 0 ? numA->num[i] - '0' : 0;
-    int b = j >= 0 ? numB->num[j] - '0' : 0;
-    int c = a + b + carry;
-    numC->num[k] = c % 10 + '0';
-    carry = c / 10;
-  }
-  numC->num[0] = carry + '0';
   free(*result);
-  *result = numC;
+  int max_len = numA->len > numB->len ? numA->len : numB->len;
+  int min_len = numA->len < numB->len ? numA->len : numB->len;
+  *result = create_large_num(max_len);
+  int buffer = 0;
+  int i;
+  for (i = 0; i < min_len; i++)
+  {
+    buffer = numA->num[numA->len - i - 1] - '0' + numB->num[numB->len - i - 1] - '0' + buffer;
+    (*result)->num[max_len - i - 1] = buffer % 10 + '0';
+    buffer /= 10;
+  }
+  i++;
+  (*result)->num[max_len - i - 1] = buffer;
 }
 
 //传入指针，返回全新的一个数
@@ -71,27 +74,16 @@ large_num large_num_copy(const large_num *const num)
 }
 
 //被减数numA，减数numB，结果result，注意提前分配result的空间
-void large_num_minus(const large_num *const numA, const large_num *const numB, large_num_ptr result)
+void large_num_minus(const large_num *const numA, const large_num *const numB, large_num_ptr *result)
 {
-  int i, j, k, carry = 0;
-  large_num_ptr numC = create_large_num(numA->len);
-  for (i = numA->len - 1, j = numB->len - 1, k = numC->len - 1; i >= 0 || j >= 0; i--, j--, k--)
+  free(*result);
+  int max_len = numA->len > numB->len ? numA->len : numB->len;
+  int min_len = numA->len < numB->len ? numA->len : numB->len;
+  *result = create_large_num(max_len);
+  for (int i = 0; i < max_len; i++)
   {
-    int a = i >= 0 ? numA->num[i] - '0' : 0;
-    int b = j >= 0 ? numB->num[j] - '0' : 0;
-    int c = a - b - carry;
-    if (c < 0)
-    {
-      c += 10;
-      carry = 1;
-    } else
-    {
-      carry = 0;
-    }
-    numC->num[k] = c + '0';
+  
   }
-  free(result);
-  result = numC;
 }
 
 void large_num_print(const large_num *const num)
@@ -115,7 +107,14 @@ void large_num_input(large_num_ptr num)
     num->num[i] = '0';
   }
   int cnt = 0;
-  while ((num->num[cnt++] = getchar()) != '\n');
+  while ((num->num[cnt++] = getchar()) != '\n')
+  {
+    if (cnt >= num->len)
+    {
+      printf("The num you input is too long!\n");
+      exit(1);
+    }
+  }
   cnt -= 2;
   //把输入内容移动到结尾
   int delta = num->len - cnt - 1;
