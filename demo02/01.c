@@ -145,6 +145,7 @@ int start(int mode)
 int bot(int mode)
 {
   //遍历每个点，更具周围字情况基于对应分数
+  //这里使用的分值仍需调整，并且可以进行更深层次的计算
   double max_score = -5;
   int bestPoint[2] = {0, 0};
   for (int i = 0; i < 3; ++i)
